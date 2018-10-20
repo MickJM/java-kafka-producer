@@ -27,3 +27,4 @@
 #
 *.yaml
 *.yml
+kafkaproducer.ini
