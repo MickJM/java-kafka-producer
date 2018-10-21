@@ -1,7 +1,9 @@
 package maersk.com.kafka.producer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.log4j.Logger;
@@ -15,14 +17,15 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import maersk.com.kafka.models.*;
 
 @RestController
 public class KafkaController {
@@ -52,6 +55,14 @@ public class KafkaController {
 		super();
 	}
 
+	@GetMapping("/kafka/get/")
+	public List<ServiceA> getServiceA() {
+	
+		List<ServiceA> serviceA = new ArrayList<ServiceA>();
+		serviceA.add(new ServiceA(1,"Carta","TheCat"));
+		return serviceA;
+	}
+	
 	@PostMapping("/kafka/{topicName}")
 	public DeferredResult<ResponseEntity<String>> send(@RequestBody String message, @PathVariable String topicName) {	
 		
