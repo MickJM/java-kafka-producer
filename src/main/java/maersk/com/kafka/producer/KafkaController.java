@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import maersk.com.kafka.models.*;
@@ -64,16 +67,31 @@ public class KafkaController {
 	}
 	
 	@PostMapping("/kafka/{topicName}")
-	public DeferredResult<ResponseEntity<String>> send(@RequestBody String message, @PathVariable String topicName) {	
-		
+	public DeferredResult<ResponseEntity<String>> 
+			send(@RequestBody String message, @PathVariable String topicName) {	
+
+		try {
+			DeSerialize(message);
+			
+		} catch (JsonParseException e) {
+			log.info("JsonParseException");
+			return null;
+			
+		} catch (JsonMappingException e) {
+			log.info("JsonMappingException");
+			return null;
+			
+		} catch (IOException e) {
+			log.info("IOException");
+			return null;
+		}
+
 		DeferredResult<ResponseEntity<String>> result = SendMessageToKafka(topicName, message);
 		return result;
 		
 	}
 
 	private DeferredResult<ResponseEntity<String>> SendMessageToKafka(String topicName, String message) {
-
-	//	DeSerialize(message);
 
 		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
 		
@@ -159,4 +177,10 @@ public class KafkaController {
 		return this.errorCode;
 	}
 	
+	private void DeSerialize(String msg) throws JsonParseException, JsonMappingException, IOException {
+		ObjectMapper  mapper = new ObjectMapper();
+		//mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+		ServiceA A = mapper.readValue(msg, ServiceA.class);
+		log.info("Deserialized");
+	}
 }

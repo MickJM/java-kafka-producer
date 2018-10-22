@@ -1,6 +1,13 @@
 package maersk.com.kafka.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import lombok.Builder;
+import lombok.Data;
+
+//@Getter @Setter @ToString @Builder
+@Data
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ServiceA {
 
 	private int id;
@@ -16,30 +23,6 @@ public class ServiceA {
 		this.lastName = lastname;
 	}
 
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-	
 	
 	
 }
