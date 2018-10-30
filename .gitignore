@@ -27,4 +27,6 @@
 #
 *.yaml
 *.yml
+*.ini_old
 kafkaproducer.ini
+cacerts
