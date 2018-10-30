@@ -39,7 +39,6 @@ public class KafkaController {
 	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
 
-	private final String defaultTopic = "mmo275TopicTest";
 	private static final MultiValueMap<String, String> headers;
 	
 	static {
@@ -98,7 +97,7 @@ public class KafkaController {
 	//	ListenableFuture<SendResult<String,String>> future =
 	//			kafkaSender.send(topicName == null ? defaultTopic : topicName, message);
 		ListenableFuture<SendResult<String,String>> future =
-				kafkaTemplate.send(topicName == null ? defaultTopic : topicName, message);
+				kafkaTemplate.send(topicName, message);
 
 		//future.addCallback(cb);
 		
