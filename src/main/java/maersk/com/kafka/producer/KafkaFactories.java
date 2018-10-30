@@ -18,6 +18,8 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.util.StringUtils;
 
+import maersk.com.kafka.cassandra.CassandraRepository;;
+
 @Configuration
 public class KafkaFactories {
 
@@ -41,10 +43,19 @@ public class KafkaFactories {
 
     static Logger log = Logger.getLogger(KafkaFactories.class);
 	
+    // Create a Bean for connections to Cassanda database
+    @Bean
+    public CassandraRepository cassandraRepository() {
+    	log.info("Creating Cassandra object ...");
+    	CassandraRepository cassRepos = new CassandraRepository();
+    	cassRepos.connect("localhost", 9042);
+    	return cassRepos;
+    }
+    
 	@Bean
 	public ProducerFactory<Object, Object> producerFactory() {
 		
-		//LoadRunTimeParameters();
+		LoadRunTimeParameters();
 		
 		Map<String, Object> properties = new HashMap<>();
 		properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, destBootstrapServers);
@@ -58,7 +69,7 @@ public class KafkaFactories {
 		properties.put("transaction.timeout.ms", 5000);
 		properties.put("max.block.ms", 5000);
 		properties.put("acks", "1");
-		System.out.println("Starting producer");
+		log.info("Starting producer");
 		/*
 		 * Testing using embedded
 		 */
@@ -101,7 +112,14 @@ public class KafkaFactories {
 	    		return;
 	    	}
     	} catch (Exception e) {
-    		log.info("PARAMS parameters is missing, using defaults");
+    		log.info("PARAMS parameter is missing, using defaults");
+    		try {
+    			this.destUsername = System.getenv("USERID");
+    			this.destPassword = System.getenv("PASSWORD");
+        		log.info("USERID/PASSWORD have been overriden from Envirnonment Variables");
+
+    		} catch (Exception e1) {
+    		}
     		return;    		
     	}
     	
@@ -115,9 +133,7 @@ public class KafkaFactories {
 			prop.load(input);
 			
 			this.destBootstrapServers = prop.getProperty("kafka.dest.bootstrap-servers");
-			log.info("this.destBootstrapServers:" + this.destBootstrapServers);
 			this.destUsername = prop.getProperty("kafka.dest.username");
-			log.info("this.destUsername:" + this.destUsername);
 			this.destPassword = prop.getProperty("kafka.dest.password");
 			this.destLoginModule = prop.getProperty("kafka.dest.login-module");
 			this.destSaslMechanism = prop.getProperty("kafka.dest.sasl-mechanism");

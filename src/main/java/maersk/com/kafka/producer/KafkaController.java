@@ -2,10 +2,12 @@ package maersk.com.kafka.producer;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.UUID;
 
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,16 +26,20 @@ import org.springframework.web.context.request.async.DeferredResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import maersk.com.kafka.cassandra.CassandraRepository;
+
 @RestController
 public class KafkaController {
 
+	@Autowired
+	private ApplicationContext context;
+	
 	@Autowired
 	private ObjectMapper mapper;
 
 	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
 
-	private final String defaultTopic = "mmo275TopicTest";
 	private static final MultiValueMap<String, String> headers;
 	
 	static {
@@ -41,7 +47,6 @@ public class KafkaController {
 		headers.put(HttpHeaders.EXPIRES, Collections.singletonList("86401"));
 		headers.put(HttpHeaders.CACHE_CONTROL, Collections.singletonList("max-age=86401"));
 		headers.put(HttpHeaders.CONTENT_TYPE, Collections.singletonList("application/json"));
-		
 	}
 
 	private HttpStatus errorCode = HttpStatus.OK;
@@ -52,6 +57,13 @@ public class KafkaController {
 		super();
 	}
 
+	/**
+	 * Post the message
+	 * 
+	 * @param message
+	 * @param topicName
+	 * @return
+	 */
 	@PostMapping("/kafka/{topicName}")
 	public DeferredResult<ResponseEntity<String>> send(@RequestBody String message, @PathVariable String topicName) {	
 		
@@ -60,35 +72,46 @@ public class KafkaController {
 		
 	}
 
-	private DeferredResult<ResponseEntity<String>> SendMessageToKafka(String topicName, String message) {
-
-	//	DeSerialize(message);
+	/** 
+	 * Send the message to Kafka
+	 * 
+	 * @param topicName
+	 * @param message
+	 * @return
+	 */
+	private DeferredResult<ResponseEntity<String>> 
+			SendMessageToKafka(String topicName, String message) {
 
 		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
 		
-	//	ListenableFuture<SendResult<String,String>> future =
-	//			kafkaSender.send(topicName == null ? defaultTopic : topicName, message);
 		ListenableFuture<SendResult<String,String>> future =
-				kafkaTemplate.send(topicName == null ? defaultTopic : topicName, message);
+				kafkaTemplate.send(topicName, message);
 
-		//future.addCallback(cb);
-		
-		
+		/**
+		 * Add a callback to the future object to process the request
+		 */
 		future.addCallback(new ListenableFutureCallback<SendResult<String,String>>() {
 			
 			@Override
 			public void onSuccess(SendResult<String,String> sendResult) {
 		
-				ObjectNode resp = Success();			
-				result.setResult(new ResponseEntity<> (resp.toString(), headers, HttpStatus.CREATED));
+				UUID uuid = UUID.randomUUID();
+				
+				ObjectNode resp = Success(uuid);			
+				result.setResult(new ResponseEntity<> (resp.toString(), 
+							headers, HttpStatus.CREATED));
 				log.info("message successfully sent");
+				
+				log.info("Inserting into Cassandra ...");				
+				context.getBean(CassandraRepository.class).insert(uuid, message);
+				
 			}
 
 			@Override
 			public void onFailure(Throwable ex) {
 				
-			//	ObjectNode resp = GetErrorResponse(ex);		
-			    result.setResult(new ResponseEntity<> (GetErrorResponse(ex).toString(), headers, GetResponseStatus()));
+			    result.setResult(new ResponseEntity<> (GetErrorResponse(ex).toString(), 
+			    			headers, GetResponseStatus()));
 				log.error("Error sending " + ex.getMessage());
 			}
 		});
@@ -97,15 +120,24 @@ public class KafkaController {
 		
 	}
 
-	//@GetMapping
-	private ObjectNode Success() {
+	/**
+	 * The message was successfully sent, create a success response message
+	 * @return
+	 */
+	private ObjectNode Success(UUID id) {
 
 		ObjectNode node = mapper.createObjectNode();
+		node.put("id", id.toString());
 		node.put("response", "success");		
 		return node;
 	}
 	
-	
+	/**
+	 * Create an error response message
+	 * 
+	 * @param ex
+	 * @return
+	 */
 	private ObjectNode GetErrorResponse(Throwable ex) {
 
 		String msg = "";
@@ -143,7 +175,11 @@ public class KafkaController {
 		
 		return node;
 	}
-	
+
+	/**
+	 * Return the HTTP status code
+	 * @return
+	 */
 	private HttpStatus GetResponseStatus() {
 		return this.errorCode;
 	}
