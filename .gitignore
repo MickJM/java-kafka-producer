@@ -25,8 +25,8 @@
 /.nb-gradle/
 
 #
-*.yaml
-*.yml
+#*.yaml
+#*.yml
 *.ini_old
 #kafkaproducer.ini
 #cacerts

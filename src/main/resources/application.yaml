@@ -1,0 +1,23 @@
+debug: false
+spring:
+  application:
+    name: Kafka-Producer
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always        
+  security:
+    enabled: false
+logging:
+  level:
+    root: INFO
+    org.springframework.web: ERROR
+    com.howtodoinjava: DEBUG
+    org.hibernate: ERROR    
+server:
+  port:
+    8096
