@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaProducerException;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,6 +24,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
@@ -57,33 +63,84 @@ public class KafkaController {
 		super();
 	}
 
-	@GetMapping("/kafka/get/")
-	public List<ServiceA> getServiceA() {
-	
-		List<ServiceA> serviceA = new ArrayList<ServiceA>();
-		serviceA.add(new ServiceA(1,"Carta","TheCat"));
-		return serviceA;
+	@RequestMapping(value="/kafka/getA/", method=RequestMethod.GET, produces="application/json")
+	//public List<ServiceA> getServiceA() {
+	//https://www.baeldung.com/spring-deferred-result
+	//https://www.javacodegeeks.com/2015/07/understanding-callable-and-spring-deferredresult.html
+	public DeferredResult<ResponseEntity<?>> getService() {
+
+		DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult(500l);
+		
+		deferredResult.onTimeout(() ->
+			deferredResult.setErrorResult(
+					ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
+					.body("{\"error\":\"Request timeout occurred\"}")));
+		
+		deferredResult.onError((Throwable t) -> {
+			deferredResult.setErrorResult(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			        .body(GetErrorResponse(t)));
+		});
+		
+		ForkJoinPool.commonPool().submit(() ->
+		{
+			ServiceA serviceA = new ServiceA(1,"Carta","TheCat");
+			String resp = null;
+			try {
+				resp = Serialize(serviceA);
+				Thread.sleep(6000);
+			} catch (JsonParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (JsonMappingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			deferredResult.setResult(ResponseEntity.ok(serviceA));
+			
+			
+		});
+		
+		return deferredResult;
+		
 	}
 	
-	@PostMapping("/kafka/{topicName}")
+	@RequestMapping(value="/kafka/get/", method=RequestMethod.GET, produces="application/json")
+	//public List<ServiceA> getServiceA() {
+	public ResponseEntity<?> getServiceA() {
+	//public Map getServiceA() {
+		List<ServiceA> list = new ArrayList<ServiceA>();
+		ServiceA serviceA = new ServiceA(1,"Carta","TheCat");
+		
+		String resp = null;
+		try {
+			resp = Serialize(serviceA);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		list.add(serviceA);
+		return new ResponseEntity<ServiceA>(serviceA, HttpStatus.OK);
+	
+	//	return Collections.singletonMap("response", serviceA);
+	}
+	
+	// http://websystique.com/spring-boot/spring-boot-rest-api-example/
+	
+	@PostMapping(path="/kafka/{topicName}", consumes={MediaType.APPLICATION_JSON_VALUE})
 	public DeferredResult<ResponseEntity<String>> 
 			send(@RequestBody String message, @PathVariable String topicName) {	
-
-		try {
-			DeSerialize(message);
-			
-		} catch (JsonParseException e) {
-			log.info("JsonParseException");
-			return null;
-			
-		} catch (JsonMappingException e) {
-			log.info("JsonMappingException");
-			return null;
-			
-		} catch (IOException e) {
-			log.info("IOException");
-			return null;
-		}
 
 		DeferredResult<ResponseEntity<String>> result = SendMessageToKafka(topicName, message);
 		return result;
@@ -93,6 +150,26 @@ public class KafkaController {
 	private DeferredResult<ResponseEntity<String>> SendMessageToKafka(String topicName, String message) {
 
 		DeferredResult<ResponseEntity<String>> result = new DeferredResult<>();
+		
+		try {
+			DeSerialize(message);
+			
+		} catch (JsonParseException e) {
+		    result.setResult(new ResponseEntity<> (GetErrorResponse(e).toString(), headers, GetResponseStatus()));
+			log.info("JsonParseException");
+			return result;
+			
+		} catch (JsonMappingException e) {
+		    result.setResult(new ResponseEntity<> (GetErrorResponse(e).toString(), headers, GetResponseStatus()));
+			log.info("JsonMappingException");
+			return result;
+			
+		} catch (IOException e) {
+		    result.setResult(new ResponseEntity<> (GetErrorResponse(e).toString(), headers, GetResponseStatus()));
+			log.info("IOException");
+			return result;
+		}
+
 		
 	//	ListenableFuture<SendResult<String,String>> future =
 	//			kafkaSender.send(topicName == null ? defaultTopic : topicName, message);
@@ -182,4 +259,13 @@ public class KafkaController {
 		ServiceA A = mapper.readValue(msg, ServiceA.class);
 		log.info("Deserialized");
 	}
+	
+	private String Serialize(ServiceA service) throws JsonParseException, JsonMappingException, IOException {
+		ObjectMapper  mapper = new ObjectMapper();
+		service.setId(Integer.parseInt("ABC"));
+		String json = mapper.writeValueAsString(service);
+		log.info("Serialized");
+		return json;
+	}
+
 }
