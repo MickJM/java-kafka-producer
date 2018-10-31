@@ -102,8 +102,8 @@ public class KafkaController {
 							headers, HttpStatus.CREATED));
 				log.info("message successfully sent");
 				
-				log.info("Inserting into Cassandra ...");				
-				context.getBean(CassandraRepository.class).insert(uuid, message);
+			//	log.info("Inserting into Cassandra ...");				
+			//	context.getBean(CassandraRepository.class).insert(uuid, message);
 				
 			}
 

@@ -40,10 +40,14 @@ public class KafkaFactories {
 	private String destTruststorePassword;
 	@Value("${kafka.dest.linger:1}")
 	private int destLinger;
+	
+	@Value("${spring.application.name:kafka-producer}")
+	private String clientId;
 
     static Logger log = Logger.getLogger(KafkaFactories.class);
 	
     // Create a Bean for connections to Cassanda database
+    /*
     @Bean
     public CassandraRepository cassandraRepository() {
     	log.info("Creating Cassandra object ...");
@@ -51,6 +55,7 @@ public class KafkaFactories {
     	cassRepos.connect("localhost", 9042);
     	return cassRepos;
     }
+    */
     
 	@Bean
 	public ProducerFactory<Object, Object> producerFactory() {
@@ -64,7 +69,7 @@ public class KafkaFactories {
 		properties.put(ProducerConfig.LINGER_MS_CONFIG, destLinger);
 
 		properties.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, "5000");
-		properties.put("client.id", "kafka-producer");
+		properties.put("client.id", this.clientId);
 		//properties.put(ProducerConfig.CLIENT_ID_CONFIG, "kafka-producer");
 		properties.put("transaction.timeout.ms", 5000);
 		properties.put("max.block.ms", 5000);
@@ -140,6 +145,7 @@ public class KafkaFactories {
 			this.destTruststoreLocation = prop.getProperty("kafka.dest.truststore-location");
 			this.destTruststorePassword = prop.getProperty("kafka.dest.truststore-password");
 			this.destLinger = Integer.parseInt(prop.getProperty("kafka.dest.linger"));
+			this.clientId = prop.getProperty("spring.application.name");
 
 		} catch(IOException e) {
 			log.error("IOException error : " + e.getMessage());
