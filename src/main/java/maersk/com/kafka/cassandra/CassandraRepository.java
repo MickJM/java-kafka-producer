@@ -33,12 +33,19 @@ public class CassandraRepository {
 	public CassandraRepository() {}
 	
 	public void connect(String node, Integer port) {
-        Builder b = Cluster.builder().addContactPoint(node);
+        Builder b = Cluster.builder()
+        		.addContactPoint(node);
         if (port != null) {
             b.withPort(port);
         }
-        cluster = b.build();
-        session = cluster.connect();
+        
+        try {
+	        cluster = b.build();
+	        session = cluster.connect();
+        } catch (Exception e) {
+    		log.info("Cassandra is not available");
+        	this.session = null;
+        }
     }
 	
 	public Session getSession() {
@@ -58,9 +65,15 @@ public class CassandraRepository {
 		}
 	}
 	
-	public void createKeyspace(
-		String keyspaceName, String replicationStrategy, int replicationFactor) {
+	// Create a keyspace 
+	public void createKeyspace(			
+		String keyspaceName, String replicationStrategy, int replicationFactor) {		
 		
+		log.info("Creating Cassandra keyspace ..." 
+				+ keyspaceName 
+				+ " replicationStratergy : " + replicationStrategy
+				+ " replicationFactor    : " + replicationFactor);
+
 		StringBuilder sb = 
 		    new StringBuilder("CREATE KEYSPACE IF NOT EXISTS ")
 		      .append(keyspaceName).append(" WITH replication = {")
@@ -68,31 +81,30 @@ public class CassandraRepository {
 		      .append("','replication_factor':").append(replicationFactor)
 		      .append("};");
 		         
-		    String query = sb.toString();
-		    session.execute(query);
+	    String query = sb.toString();
+	    session.execute(query);
 	}	
 	
 	public void insert(UUID id, String msg) {
 		
-		log.info("Inserting into Cassandra database ");
-		//String json = "{\"request\":\"service2\"}";
-		
-		StringBuilder sb = new StringBuilder("INSERT INTO ")
-				.append("kafka.service1 ").append("(id, value) ")
-				.append("VALUES (").append(id.toString())
-				.append(", ").append("textAsBlob('").append(msg)
-				//.append("textAsBlob('").append(json)
-				.append("'));");
-		
-		String query = sb.toString();
-		try {
-			session.execute(query);
+		if (this.session != null) {
+			log.info("Inserting into Cassandra database ");
+			//String json = "{\"request\":\"service2\"}";
 			
-		} catch (Exception e)
-		{
-			System.out.println("Error updating cassandra");
+			StringBuilder sb = new StringBuilder("INSERT INTO ")
+					.append("kafka.service1 ").append("(id, value) ")
+					.append("VALUES (").append(id.toString())
+					.append(", ").append("textAsBlob('").append(msg)
+					.append("'));");
+			
+			String query = sb.toString();
+			try {
+				session.execute(query);
+				
+			} catch (Exception e)
+			{
+				System.out.println("Error updating cassandra");
+			}
 		}
-		int i = 0;
-
 	}
 }

@@ -44,18 +44,27 @@ public class KafkaFactories {
 	@Value("${spring.application.name:kafka-producer}")
 	private String clientId;
 
+	@Value("${cassandra.host.name}")
+	private String CassandraHost;
+	@Value("${cassandra.host.port}")
+	private int CassandraPort;
+	
     static Logger log = Logger.getLogger(KafkaFactories.class);
 	
-    // Create a Bean for connections to Cassanda database
-    /*
+    // Create a Bean for connections to Cassandra database
+    
     @Bean
     public CassandraRepository cassandraRepository() {
     	log.info("Creating Cassandra object ...");
     	CassandraRepository cassRepos = new CassandraRepository();
-    	cassRepos.connect("localhost", 9042);
+    	
+    	cassRepos.connect(this.CassandraHost, this.CassandraPort);
+    	if (cassRepos.getSession() != null) {
+    		cassRepos.createKeyspace("kafka", "SimpleStrategy", 1);
+    	}
     	return cassRepos;
     }
-    */
+    
     
 	@Bean
 	public ProducerFactory<Object, Object> producerFactory() {

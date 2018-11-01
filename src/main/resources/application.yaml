@@ -2,6 +2,10 @@ debug: false
 spring:
   application:
     name: Kafka-Producer
+cassandra:
+  host:
+    name: localhost
+    port: 9042
 management:
   endpoints:
     web:
