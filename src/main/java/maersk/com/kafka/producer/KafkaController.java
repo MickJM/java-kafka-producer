@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaProducerException;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -64,8 +65,9 @@ public class KafkaController {
 	 * @param topicName
 	 * @return
 	 */
-	@PostMapping("/kafka/{topicName}")
-	public DeferredResult<ResponseEntity<String>> send(@RequestBody String message, @PathVariable String topicName) {	
+	@PostMapping(path="/kafka/{topicName}", consumes={MediaType.APPLICATION_JSON_UTF8_VALUE})
+	public DeferredResult<ResponseEntity<String>> 
+			send(@RequestBody String message, @PathVariable String topicName) {	
 		
 		DeferredResult<ResponseEntity<String>> result = SendMessageToKafka(topicName, message);
 		return result;
