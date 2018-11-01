@@ -262,7 +262,7 @@ public class KafkaController {
 	
 	private String Serialize(ServiceA service) throws JsonParseException, JsonMappingException, IOException {
 		ObjectMapper  mapper = new ObjectMapper();
-		service.setId(Integer.parseInt("ABC"));
+		//service.setId(Integer.parseInt("ABC"));
 		String json = mapper.writeValueAsString(service);
 		log.info("Serialized");
 		return json;
