@@ -18,12 +18,25 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.util.StringUtils;
 
+/*
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.util.StringUtils;
+*/
+
 import maersk.com.kafka.cassandra.CassandraRepository;;
 
 @Configuration
 public class KafkaFactories {
 
 	//@Value("${spring.kafka.bootstrap-servers:}")	
+	// Get all the parameters
 	@Value("${kafka.dest.bootstrap-servers:}")
 	private String destBootstrapServers;
 	@Value("${kafka.dest.username:}")
@@ -58,10 +71,10 @@ public class KafkaFactories {
     	log.info("Creating Cassandra object ...");
     	CassandraRepository cassRepos = new CassandraRepository();
     	
-    	cassRepos.connect(this.CassandraHost, this.CassandraPort);
-    	if (cassRepos.getSession() != null) {
-    		cassRepos.createKeyspace("kafka", "SimpleStrategy", 1);
-    	}
+    	//cassRepos.connect(this.CassandraHost, this.CassandraPort);
+    	//if (cassRepos.getSession() != null) {
+    	//	cassRepos.createKeyspace("kafka", "SimpleStrategy", 1);
+    	//}
     	return cassRepos;
     }
     

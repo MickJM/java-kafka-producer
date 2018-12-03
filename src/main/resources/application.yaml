@@ -21,7 +21,8 @@ logging:
     root: INFO
     org.springframework.web: ERROR
     com.howtodoinjava: DEBUG
-    org.hibernate: ERROR    
+    org.hibernate: ERROR
+    org.apache.kafka.common.security: ERROR    
 server:
   port:
-    8096
+    8092
